@@ -348,6 +348,16 @@ public class AccountServiceImpl implements AccountService {
 		commissionPresentInfoList.add(commissionPresentInfo);
 		ProcessResult processResult =commissionPresentService.presentCommission(commissionPresentInfoList);
 		System.out.println(processResult.toString());
+		try {
+			List<CommissionPresentInfo> results = (List<CommissionPresentInfo>)processResult.getResponseInfo();
+			if(results!=null)
+			{
+				processResult.setRetCode(results.get(0).getResult());
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return processResult;
 	}
 	

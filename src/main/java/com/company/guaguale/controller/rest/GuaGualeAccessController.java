@@ -18,6 +18,7 @@ import com.company.guaguale.domain.RestResult;
 import com.company.guaguale.service.AccountService;
 import com.company.guaguale.service.impl.CrcUtils;
 import com.xinwei.nnl.common.domain.ProcessResult;
+import com.xinwei.nnl.common.util.JsonUtil;
 
 @RestController
 @RequestMapping("/guaguale")
@@ -31,12 +32,14 @@ public class GuaGualeAccessController {
 	 * @return  String userPayPlatform,String openId
 	 */
 	@RequestMapping(method = RequestMethod.GET,value = "/{userPayPlatform}/{openId}/balance")
-	public  RestResult getBalance(@PathVariable String userPayPlatform,@PathVariable String openId,@RequestBody String jsonString) {
+	public  RestResult getBalance(@PathVariable String userPayPlatform,@PathVariable String openId) {
 		RestResult restResult =new RestResult();
 		restResult.setRetCode(GuaGuaLeConst.RESULT_Error_Fail);
 		try {
 			ProcessResult processResult=accountService.getBalance(userPayPlatform, openId);
 			restResult = getRestResult(processResult);
+			String jsonStrBalance = JsonUtil.toJson(restResult.getResponseInfo());
+			restResult.setResponseInfo(jsonStrBalance);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -57,7 +60,7 @@ public class GuaGualeAccessController {
 	}
 	
 	@RequestMapping(method = RequestMethod.POST,value = "/{userPayPlatform}/{openId}/transferBonus")
-	public  RestResult transferBonus(@PathVariable String countryCode,@RequestBody BonusRequest bonusRequest) {
+	public  RestResult transferBonus(@PathVariable String userPayPlatform,@PathVariable String openId,@RequestBody BonusRequest bonusRequest) {
 		RestResult restResult =new RestResult();
 		restResult.setRetCode(GuaGuaLeConst.RESULT_Error_Fail);
 		try {
@@ -65,6 +68,7 @@ public class GuaGualeAccessController {
 			restResult = getRestResult(processResult);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
+			
 			e.printStackTrace();
 		}
 		return restResult;

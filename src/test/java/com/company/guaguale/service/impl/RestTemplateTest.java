@@ -2,6 +2,7 @@ package com.company.guaguale.service.impl;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -13,22 +14,51 @@ import com.company.guaguale.domain.RestResult;
 
 public class RestTemplateTest {
 private static RestTemplate template = new RestTemplate();
-	String simsBaseUrl = "http://192.168.1.1:8098/test/";
+	String simsBaseUrl = "http://101.200.166.163:9100/guaguale/";
+	//String simsBaseUrl = "http://127.0.0.1:9100/guaguale/";
 
 	public static void main(String[] args)
 	{
 		RestTemplateTest restTemplateTest = new RestTemplateTest();
-		restTemplateTest.plusBonus(null);
+		int i=1;
+		while(i<10)
+		{
+			i++;
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			long c = System.currentTimeMillis();
+			System.out.print(System.currentTimeMillis());
+			restTemplateTest.plusBonus();
+			System.out.print(" time:(" + (System.currentTimeMillis()-c) + ")");
+			
+		}
 		restTemplateTest.queryBalance();
 		
 		
 	}
 	
-	protected void plusBonus(BonusRequest bonusRequest)
+	public void plusBonus()
 	{
 		RestResult result = new RestResult();
-		String userPlatFormId = "";
-		String openId = "";
+		BonusRequest bonusRequest = new BonusRequest();
+		bonusRequest.setUserPayPaltform("test7");
+		bonusRequest.setOpenid("openid1");
+		bonusRequest.setFourth_deal_no("1234567890abcdefghi");
+		Calendar now = Calendar.getInstance();
+		now.add(Calendar.DATE, -3);
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		
+		bonusRequest.setNext_client_time(formatter.format(now.getTime()));
+		bonusRequest.setSuccess_time("20171014141314");
+		bonusRequest.setCurrency("yuan");
+		bonusRequest.setOrderPaymentAmount("12334");
+		String userPlatFormId = bonusRequest.getUserPayPaltform();
+		String openId = bonusRequest.getOpenid();
+		System.out.println(simsBaseUrl + userPlatFormId + "/" + openId + "/transferBonus");
 		result  = template.postForObject(simsBaseUrl + userPlatFormId + "/" + openId + "/transferBonus" , bonusRequest, RestResult.class);
 		System.out.println("restResultInfo = " + result);
 		/**
@@ -36,12 +66,13 @@ private static RestTemplate template = new RestTemplate();
 		 */
 	}
 	
-	protected void queryBalance()
+	public void queryBalance()
 	{
 		RestResult result = new RestResult();
-		String userPlatFormId = "";
-		String openId = "";
-		result  = template.postForObject(simsBaseUrl + userPlatFormId + "/" + openId + "/" + "balance", "", RestResult.class);
+		String userPlatFormId = "test7";
+		String openId = "openid1";
+		result  = template.getForObject(simsBaseUrl + userPlatFormId + "/" + openId + "/" + "balance", RestResult.class);
+		//template.getForObject(url, responseType, uriVariables)
 		System.out.println("restResultInfo = " + result);
 		/**
 		 * retCode 0 --成功； 

@@ -1,6 +1,8 @@
 package com.company.guaguale.domain;
 
-public class AccountBalance extends AccountInfo{
+import java.io.Serializable;
+
+public class AccountBalance extends AccountInfo implements Serializable{
 	/**
 	 * 
 	 */

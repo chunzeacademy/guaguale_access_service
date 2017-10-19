@@ -30,6 +30,8 @@
 	<bean id="balanceService" class="org.springframework.remoting.caucho.HessianProxyFactoryBean">
 		<property name="serviceInterface" value="com.xinwei.coobill.bankproxy.facade.BankProxyInterface" />
 		<property name="serviceUrl" value="${hessian.balanceUrl}lot_comm_service/hessian/BankProxyInterface" />
+	    <property name="connectTimeout" value="5000" />
+		<property name="readTimeout" value="5000" />
 	</bean>
 	
 	

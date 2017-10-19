@@ -5,7 +5,7 @@
 
 	<groupId>com.company</groupId>
 	<artifactId>guaguale_access_service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.0.1</version>
 	<packaging>jar</packaging>
 
 	<name>guaguale_access_service</name>
