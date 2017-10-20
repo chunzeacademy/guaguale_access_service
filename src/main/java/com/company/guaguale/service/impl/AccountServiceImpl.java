@@ -492,7 +492,7 @@ public class AccountServiceImpl implements AccountService {
 			}
 			else
 			{
-				processResult.setRetCode(GuaGuaLeConst.RESULT_Error_Fail);
+				processResult.setRetCode(bankProxyResponse.getReturnCode());
 			}
         }
 		

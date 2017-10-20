@@ -20,7 +20,7 @@ private static RestTemplate template = new RestTemplate();
 	public static void main(String[] args)
 	{
 		RestTemplateTest restTemplateTest = new RestTemplateTest();
-		int i=1;
+		int i=11;
 		while(i<10)
 		{
 			i++;
@@ -69,11 +69,11 @@ private static RestTemplate template = new RestTemplate();
 	public void queryBalance()
 	{
 		RestResult result = new RestResult();
-		String userPlatFormId = "test7";
+		String userPlatFormId = "test71";
 		String openId = "openid1";
 		result  = template.getForObject(simsBaseUrl + userPlatFormId + "/" + openId + "/" + "balance", RestResult.class);
 		//template.getForObject(url, responseType, uriVariables)
-		System.out.println("restResultInfo = " + result);
+		System.out.println("query Balance restResultInfo = " + result);
 		/**
 		 * retCode 0 --成功； 
 		 * responseInfo 保存 List<AccountBalance> .

@@ -1,11 +1,14 @@
 package com.company.guaguale.service.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,11 +16,25 @@ import org.springframework.stereotype.Service;
 
 import com.company.guaguale.domain.AccountBalance;
 import com.company.guaguale.domain.AccountInfo;
+import com.company.guaguale.domain.SettllingInfo;
 
 @Service("redisAccountService")
 public class RedisAccountService {
 	
+	@Value("${scheduler.queneGroup:1}")  
+	private int settledQueneGroup;
+	
 	private final String Key_prefix_SettledAccInfo = "_transSettled1.0:";
+	
+	/**
+	 * 获取结算账户的锁
+	 */
+	private final String Key_prefix_qSettledLock = "_lockSettled1.0:";
+	
+	/**
+	 * 正在结转中的对象
+	 */
+	private final String Key_prefix_SettlingMap = "_settling1.0:";
 	
 	/**
 	 * 账户每天结转的错
@@ -43,6 +60,7 @@ public class RedisAccountService {
 	private final String Key_prefix_CreateAccountLock = "_cAccountLock:";
 	@Resource (name = "redisTemplate")
 	protected RedisTemplate<Object, Object> redisTemplate;
+	
 	public String getAccountInfoKey(AccountInfo accountInfo)
 	{
 		
@@ -50,8 +68,24 @@ public class RedisAccountService {
 		
 	}
 	
-	
-	
+	/**
+	 * 获取settled锁的key
+	 * @return
+	 */
+	protected String getLockQSettledAcc()
+	{
+		String str = this.Key_prefix_qSettledLock + ":" + this.settledQueneGroup;
+		return str;
+	}
+	/**
+	 * 获取settling的mapkey
+	 * @return
+	 */
+	protected String getSettledingMapKey()
+	{
+		String str = this.Key_prefix_SettlingMap + ":" + this.settledQueneGroup;
+		return str;
+	}
 	
 	protected String getAccountInfoKey(String userPayPaltform,String openId,int accountType)
 	{
@@ -335,6 +369,104 @@ public class RedisAccountService {
 		return account;
 	}
 	
+	/**
+	 * 获取正在结转的超时的列表
+	 * @param timeoutSeconds
+	 * @return
+	 */
+	public int getTimeOutSettlingAccs(long timeoutSeconds,int maxAmount)
+	{
+		String keySettling = getSettledingMapKey();
+		int index=0;
+		try {
+			Map<Object, Object> settlingMap =  redisTemplate.opsForHash().entries(keySettling); 
+			for (Map.Entry<Object, Object> entry : settlingMap.entrySet()) {
+				try {
+					SettllingInfo settllingInfo =(SettllingInfo)entry.getValue();
+					if(settllingInfo!=null && System.currentTimeMillis() - settllingInfo.getSettledTime() >timeoutSeconds*1000)
+					{
+						AccountInfo accountInfo = settllingInfo.getAccountInfo();
+						//willSettledLists.add(settllingInfo.getAccountInfo());
+						//放入重做队列，进行重做
+						String keyList = this.getDailySettledListkey(accountInfo.getExpireTimes());
+						this.redisTemplate.opsForList().rightPush(keyList, accountInfo);
+						
+						index++;
+						if(maxAmount>maxAmount)
+						{
+							break;
+						}
+					}
+				} catch (Throwable e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		} catch (Throwable e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
+		return index;
+	}
+	
+	/**
+	 * 获取需要结转的账号
+	 * @param day
+	 * @param amount
+	 * @return
+	 * @throws Exception
+	 */
+	public List<AccountInfo> getWillSettledAccount(String day,int amount) throws Exception
+	{
+		List<AccountInfo> willSettledLists = new ArrayList<AccountInfo>();
+		String lockKey  = getLockQSettledAcc();
+		long lockTime=0;
+		try {
+			
+			lockTime = this.getCommonLock(lockKey);
+			if(lockTime==0)
+			{
+				return willSettledLists;
+			}
+			for(int i=0;i<amount;i++)
+			{
+				AccountInfo account=null;
+				String keyList = this.getDailySettledListkey(day);
+				//从账户中获取账户信息；
+				account = (AccountInfo)this.redisTemplate.opsForList().index(keyList, 0);
+				if(account==null)
+				{
+					break;
+				}
+				willSettledLists.add(account);
+				//将需要结转的账户放入map,获取正在结转中的map的关键字；
+				String keySettling = getSettledingMapKey();
+				Map<Object, Object> map =  redisTemplate.opsForHash().entries(keySettling); 
+				
+				SettllingInfo settllingInfo = new SettllingInfo();
+				settllingInfo.setAccountInfo(account);
+				
+				map.put(this.getAccountInfoKey(account), settllingInfo);
+				//end 放入map
+				//删除第一个信息；
+				this.redisTemplate.opsForList().leftPop(keyList);
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new Exception();
+		}
+		finally {
+			try {
+				this.releaseCommonLock(lockKey, lockTime);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return willSettledLists;
+	}
 	
 	public long getWillSettledSize(String day) throws Exception
 	{
@@ -474,7 +606,7 @@ public class RedisAccountService {
     }  
 	
 	/**
-	 * 申请通用锁
+	 * 申请通用锁，等待30秒
 	 * @param lockKey
 	 * @return  0--失败
 	 */
@@ -569,6 +701,7 @@ public class RedisAccountService {
 			{
 				redisTemplate.delete(key);
 			}
+			//将已经结转的Map中的信息删除；
 			
 				
 			
@@ -577,6 +710,17 @@ public class RedisAccountService {
 			e.printStackTrace();
 		}
 		removeAccountRelation(accountInfo.getExpireTimes(),accountInfo);	
+		
+		//将正在结转的信息的key删除
+		try {
+			String keySettling = getSettledingMapKey();
+			Map<Object, Object> map =  redisTemplate.opsForHash().entries(keySettling); 
+			map.remove(this.getAccountInfoKey(accountInfo));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return ;
 	}
 	

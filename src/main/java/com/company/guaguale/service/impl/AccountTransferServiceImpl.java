@@ -70,8 +70,8 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 		
 		return false;
 	}
-	
-	protected String getPreAccountDay(int preDays)
+	@Override
+	public String getPreAccountDay(int preDays)
 	{
 		Calendar payCalendar = Calendar.getInstance();
 		payCalendar.add(Calendar.DATE, preDays * -1);
@@ -84,11 +84,11 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 	 * @throws Exception
 	 */
 	@Override
-	public AccountInfo getWillTransferList(int preDays) throws Exception
+	public List<AccountInfo> getWillTransferList(int preDays,int amount) throws Exception
 	{
 		String day = getPreAccountDay(preDays);
-		AccountInfo accountInfo= this.redisAccountService.getWillSettledAccount(day);
-		return accountInfo;
+		List<AccountInfo> settledLists= this.redisAccountService.getWillSettledAccount(day,amount);
+		return settledLists;
 	}
 	
 	
@@ -107,13 +107,14 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 		try {
 			do {
 				index++;
-				accountInfo = getWillTransferList(preDays);
-				if(accountInfo==null)
+				List<AccountInfo> accountInfos = getWillTransferList(preDays,1);
+				if(accountInfos.size()==0)
 				{
 					preDays++;
 				}
 				else
 				{
+					accountInfo = accountInfos.get(0);
 					break;
 				}
 				
@@ -196,6 +197,27 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 		return null;
 	}
 	
+	/**
+	 * 修改原账号信息为已经结转
+	 * @param srcAccountInfo
+	 */
+	protected void updateAccountToSettled(AccountInfo srcAccountInfo)
+	{
+		//结转账号
+		if(srcAccountInfo.getAccountType()==srcAccountInfo.AccountType_buyer_daily)
+		{
+			//如果账户是没有结转状态
+			if(srcAccountInfo.getAccountStatus()!=srcAccountInfo.Status_HaveSettled)
+			{
+				//结转账户
+				this.redisAccountService.settledAccount(srcAccountInfo);
+				srcAccountInfo.setAccountStatus(srcAccountInfo.Status_HaveSettled);
+				srcAccountInfo.setExpireTimes("1970-01-01");
+				accountInfoMapper.updateStatusTimes(srcAccountInfo);
+				
+			}
+		}
+	}
 	
 	
 	@Override
@@ -203,14 +225,16 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 		ProcessResult processResult = new ProcessResult();
 		processResult.setRetCode(GuaGuaLeConst.RESULT_Error_Fail);
 		long requestTime=0;
-		//获取单个账户的转账锁
+		//获取单个账户的转账锁的key
 		String lockKey = this.redisAccountService.getSettledDailyLockKey(srcAccountInfo.getUserPayPaltform(),
 				srcAccountInfo.getOpenId(), srcAccountInfo.getAccountType(), srcAccountInfo.getExpireTimes());
 
 		try {
+			//获取锁
 			requestTime = this.redisAccountService.getCommonLock(lockKey);
 			if(requestTime>0)
 			{
+				//查询余额
 				processResult  =this.accountService.getBalance(srcAccountInfo);
 				if(processResult.getRetCode()==GuaGuaLeConst.RESULT_Success)
 				{
@@ -223,7 +247,8 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 						//如果余额大于零
 						if(balance<=0.00)
 						{
-							
+							//如果是需要结转的账户
+							updateAccountToSettled(srcAccountInfo);
 						}
 						else
 						{
@@ -246,11 +271,7 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 								//如果目标账户成功增加余额
 								if(processResult.getRetCode()==GuaGuaLeConst.RESULT_Success)
 								{
-									//修改账户状态
-									this.redisAccountService.settledAccount(srcAccountInfo);
-									srcAccountInfo.setAccountStatus(srcAccountInfo.Status_HaveSettled);
-									srcAccountInfo.setExpireTimes("1970-01-01");
-									accountInfoMapper.updateStatusTimes(srcAccountInfo);
+									updateAccountToSettled(srcAccountInfo);
 								}
 								
 							}
@@ -261,7 +282,12 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 						
 					}
 				}
-				
+				//如果原账号信息不存在
+				else if(100==processResult.getRetCode())
+				{
+					//结算账号
+					updateAccountToSettled(srcAccountInfo);
+				}
 			}
 			// TODO Auto-generated method stub
 				}
