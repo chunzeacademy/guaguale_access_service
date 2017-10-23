@@ -12,4 +12,7 @@ public interface AccountTransferService {
 	
 	public int settled(int days,int loopNumber);
 	public String getPreAccountDay(int preDays);
+	public void reSettledAccount(AccountInfo settledAccountInfo);
+	public void refreshAccountRelation(String userPayPlatform, String openId);
+	
 }

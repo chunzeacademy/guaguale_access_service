@@ -20,7 +20,7 @@ private static RestTemplate template = new RestTemplate();
 	public static void main(String[] args)
 	{
 		RestTemplateTest restTemplateTest = new RestTemplateTest();
-		int i=11;
+		int i=10;
 		while(i<10)
 		{
 			i++;
@@ -36,6 +36,7 @@ private static RestTemplate template = new RestTemplate();
 			System.out.print(" time:(" + (System.currentTimeMillis()-c) + ")");
 			
 		}
+		//restTemplateTest.refreshRelation();
 		restTemplateTest.queryBalance();
 		
 		
@@ -69,8 +70,11 @@ private static RestTemplate template = new RestTemplate();
 	public void queryBalance()
 	{
 		RestResult result = new RestResult();
-		String userPlatFormId = "test71";
-		String openId = "openid1";
+		String userPlatFormId = "wechat";
+		String openId = "o97mfwQwyR09ANdVDYDSizVEHg5Y";
+		//String userPlatFormId = "test7";
+		//String openId = "openid1";
+		
 		result  = template.getForObject(simsBaseUrl + userPlatFormId + "/" + openId + "/" + "balance", RestResult.class);
 		//template.getForObject(url, responseType, uriVariables)
 		System.out.println("query Balance restResultInfo = " + result);
@@ -80,4 +84,22 @@ private static RestTemplate template = new RestTemplate();
 		 * 
 		 */
 	}
+	
+	public void refreshRelation()
+	{
+		RestResult result = new RestResult();
+		String userPlatFormId = "wechat";
+		String openId = "o97mfwQwyR09ANdVDYDSizVEHg5Y";
+		
+		///{userPayPlatform}/{openId}/refreshRelation
+		result  = template.getForObject(simsBaseUrl + userPlatFormId + "/" + openId + "/" + "refreshRelation", RestResult.class);
+		//template.getForObject(url, responseType, uriVariables)
+		System.out.println("query Balance restResultInfo = " + result);
+		/**
+		 * retCode 0 --成功； 
+		 * responseInfo 保存 List<AccountBalance> .
+		 * 
+		 */
+	}
+	
 }

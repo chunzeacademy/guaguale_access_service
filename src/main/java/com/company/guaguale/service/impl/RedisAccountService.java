@@ -410,6 +410,19 @@ public class RedisAccountService {
 	}
 	
 	/**
+	 * 
+	 * @param timeoutSeconds
+	 * @param maxAmount
+	 * @return
+	 */
+	
+	public void reSettledAccount(AccountInfo accountInfo)
+	{
+		
+		String keyList = this.getDailySettledListkey(accountInfo.getExpireTimes());
+		this.redisTemplate.opsForList().rightPush(keyList, accountInfo);
+	}
+	/**
 	 * 获取需要结转的账号
 	 * @param day
 	 * @param amount

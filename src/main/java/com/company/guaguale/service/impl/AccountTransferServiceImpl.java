@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -43,7 +44,7 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 	 * @param accountInfo
 	 * @return
 	 */
-	protected boolean isCurrentAccount(AccountInfo accountInfo)
+	public boolean isCurrentAccount(AccountInfo accountInfo)
 	{
 		
 		Calendar now = Calendar.getInstance();
@@ -90,6 +91,44 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 		List<AccountInfo> settledLists= this.redisAccountService.getWillSettledAccount(day,amount);
 		return settledLists;
 	}
+	
+	@Override
+	public void reSettledAccount(AccountInfo settledAccountInfo)
+	{
+		AccountInfo accountInfo = this.accountService.getAccountInfo(settledAccountInfo.getUserPayPaltform(), settledAccountInfo.getOpenId(), settledAccountInfo.getAccountType(), settledAccountInfo.getCurrency(), settledAccountInfo.getExpireTimes(), false);
+		if(accountInfo!=null)
+		{
+			redisAccountService.reSettledAccount(accountInfo);
+		}
+	}
+	
+	@Override
+	public void refreshAccountRelation(String userPayPlatform, String openId)
+	{
+		AccountInfo selectAccount = new AccountInfo();
+		selectAccount.setUserPayPaltform(userPayPlatform);
+		selectAccount.setOpenId(openId);
+		List<AccountInfo> accountLists = accountInfoMapper.selectByOpenId(selectAccount);
+		Map<Object,Object> accountMap=this.redisAccountService.getAccountRelation(userPayPlatform, openId);
+		if(accountMap!=null)
+		{
+			accountMap.clear();
+		}
+		for(int i=0;i<accountLists.size();i++)
+		{
+			try {
+				selectAccount = accountLists.get(i);
+				if(selectAccount.getAccountStatus()==selectAccount.Status_ready)
+				{
+					redisAccountService.putAccountRelation(selectAccount.getExpireTimes(), selectAccount);
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
 	
 	
 	/**
@@ -141,7 +180,7 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 	 * @param accountInfo
 	 * @return
 	 */
-	protected AccountInfo getSumAccInfoByOpen(AccountInfo accountInfo)
+	public AccountInfo getSumAccInfoByOpen(AccountInfo accountInfo)
 	{
 		AccountInfo totalAccOpenid= accountInfo.getCopy();
 		totalAccOpenid.setAccountType(AccountInfo.AccountType_buyer_openId_total);
@@ -157,7 +196,7 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 	 * @param openId
 	 * @return
 	 */
-	protected ProcessResult getWillTransferList(String userPayPlatform, String openId)
+	public ProcessResult getWillTransferList(String userPayPlatform, String openId)
 	{
 		ProcessResult balanceResult = accountService.getBalance(userPayPlatform, openId);
 		List<AccountInfo> accountLists = new ArrayList<AccountInfo>();
@@ -201,7 +240,7 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 	 * 修改原账号信息为已经结转
 	 * @param srcAccountInfo
 	 */
-	protected void updateAccountToSettled(AccountInfo srcAccountInfo)
+	public void updateAccountToSettled(AccountInfo srcAccountInfo)
 	{
 		//结转账号
 		if(srcAccountInfo.getAccountType()==srcAccountInfo.AccountType_buyer_daily)
@@ -305,7 +344,7 @@ public class AccountTransferServiceImpl implements AccountTransferService {
 		return processResult;
 	}
 	
-	protected String getAccountDay(String paySuccessTime)
+	public String getAccountDay(String paySuccessTime)
 	{
 		Date payTime = null;
 		try

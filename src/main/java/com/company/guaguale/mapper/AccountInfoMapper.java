@@ -22,14 +22,14 @@ public interface AccountInfoMapper {
 	 * @param accountInfo
 	 * @return
 	 */
-	@Update("update accountInfo set accountStatus=#{accountStatus},expireTimes=#{expireTimes} where userPayPaltform= #{userPayPaltform} and openId=#{openId} and accountType=#{accountType}")
+	@Update("update accountInfo set accountStatus=#{accountStatus},expireTimes=#{expireTimes} where userPayPaltform= #{userPayPaltform} and openId=#{openId} and accountType=#{accountType} and userAccountId=#{userAccountId}")
 	public int updateStatusTimes(AccountInfo accountInfo);
 	/**
 	 * 更新状态
 	 * @param accountInfo
 	 * @return
 	 */
-	@Update("update accountInfo set accountStatus=#{accountStatus} where userPayPaltform= #{userPayPaltform} and openId=#{openId} and accountType=#{accountType}")
+	@Update("update accountInfo set accountStatus=#{accountStatus} where userPayPaltform= #{userPayPaltform} and openId=#{openId} and accountType=#{accountType} and userAccountId=#{userAccountId}")
 	public int updateStatus(AccountInfo accountInfo);
 	
 	/**

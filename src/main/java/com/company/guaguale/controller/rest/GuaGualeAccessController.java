@@ -16,6 +16,7 @@ import com.company.guaguale.domain.BonusRequest;
 import com.company.guaguale.domain.PayReqeust;
 import com.company.guaguale.domain.RestResult;
 import com.company.guaguale.service.AccountService;
+import com.company.guaguale.service.AccountTransferService;
 import com.company.guaguale.service.impl.CrcUtils;
 import com.xinwei.nnl.common.domain.ProcessResult;
 import com.xinwei.nnl.common.util.JsonUtil;
@@ -25,7 +26,39 @@ import com.xinwei.nnl.common.util.JsonUtil;
 public class GuaGualeAccessController {
 	  @Resource(name="accountService")
 	  private AccountService accountService;
-	/**
+	
+	  @Resource(name="accountTransferService")
+	  private AccountTransferService accountTransferService;
+	
+	  
+	  
+	 @RequestMapping(method = RequestMethod.POST,value = "/{userPayPlatform}/{openId}/resettling")
+	 public  RestResult resettlingAccount(@PathVariable String userPayPlatform,@PathVariable String openId,@RequestBody AccountInfo accountInfo) {
+		 RestResult restResult =new RestResult();
+		 restResult.setRetCode(GuaGuaLeConst.RESULT_Success);
+		 try {
+			accountTransferService.reSettledAccount(accountInfo);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 return restResult;
+	 }
+		 
+	 @RequestMapping(method = RequestMethod.GET,value = "/{userPayPlatform}/{openId}/refreshRelation")
+	 public  RestResult refreshRealtion(@PathVariable String userPayPlatform,@PathVariable String openId) {
+		 RestResult restResult =new RestResult();
+		 restResult.setRetCode(GuaGuaLeConst.RESULT_Success);
+		 try {
+			accountTransferService.refreshAccountRelation(userPayPlatform, openId);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 return restResult;
+	 }
+	  
+	 /**
 	 * 申请订单ID
 	 * @param countryCode
 	 * @param jsonString

@@ -99,7 +99,7 @@ public class AccountServiceImpl implements AccountService {
 	
 	
 	
-	protected AccountInfo createAccountDaily(String userPayPaltform,String openId,String currency,int accountType,String day)
+	public AccountInfo createAccountDaily(String userPayPaltform,String openId,String currency,int accountType,String day)
 	{
 		AccountInfo accountInfo = null;
 		long requestTime = 0; 
@@ -209,7 +209,7 @@ public class AccountServiceImpl implements AccountService {
 	 * @param payTime
 	 * @return
 	 */
-	protected String getAccountDay(String paySuccessTime)
+	public String getAccountDay(String paySuccessTime)
 	{
 		Date payTime = null;
 		try
@@ -230,7 +230,7 @@ public class AccountServiceImpl implements AccountService {
 	 *  获取当天的账户时间
 	 * @return
 	 */
-	protected String getNowAccountDay()
+	public String getNowAccountDay()
 	{
 	
 		Calendar payCalendar = Calendar.getInstance();
@@ -242,7 +242,7 @@ public class AccountServiceImpl implements AccountService {
 	 * @param requestime
 	 * @return
 	 */
-	protected Calendar getCalendar(String requestime)
+	public Calendar getCalendar(String requestime)
 	{
 		Date payTime = null;
 		try
@@ -265,7 +265,7 @@ public class AccountServiceImpl implements AccountService {
 	 * @param createTime 格式yyyy-mm-dd hh:mm:ss
 	 * @return
 	 */
-	protected String createTransId(String requestId,String requestTime)
+	public String createTransId(String requestId,String requestTime)
 	{
 		//String str = bonusRequest.getFourth_deal_no();
 		String str = requestId;
@@ -282,7 +282,7 @@ public class AccountServiceImpl implements AccountService {
 	 * @param accountInfo
 	 * @return
 	 */
-	protected boolean isAccountExpired(AccountInfo accountInfo)
+	public boolean isAccountExpired(AccountInfo accountInfo)
 	{
 		if(accountInfo.getAccountStatus()!=AccountInfo.Status_ready)
 			return true;
@@ -440,7 +440,15 @@ public class AccountServiceImpl implements AccountService {
 				AccountBalance accountBalance = new AccountBalance();
 				accountBalance.setAccountInfo(accountInfo);
 				accountBalance.setBalance(bankProxyResponse.getBak1());
-				//是否该账户已经查询过余额
+				
+				if(accountBalance.getAccountType()==accountBalance.AccountType_buyer_daily)
+				{
+					if(accountBalance.getBalance().compareTo("0.00")==0)
+					{
+						continue;
+					}
+				}
+					//是否该账户已经查询过余额
 				if(retAccMap.containsKey(String.valueOf(accountBalance.getUserAccountId())))
 				{
 					AccountBalance havedAddBalance = retAccMap.get(String.valueOf(accountBalance.getUserAccountId()));

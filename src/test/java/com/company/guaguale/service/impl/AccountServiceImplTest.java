@@ -17,10 +17,16 @@ import com.company.guaguale.Const.GuaGuaLeConst;
 import com.company.guaguale.domain.BonusRequest;
 import com.company.guaguale.service.AccountService;
 import com.company.guaguale.service.AccountTransferService;
+import com.company.guaguale.task.SettledTask;
 import com.xinwei.nnl.common.domain.ProcessResult;
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class AccountServiceImplTest {
+	
+	@Resource(name="redisAccountService")
+	private RedisAccountService  redisAccountService;
+	
+	
     @Resource(name="accountService")
     private AccountService accountService;
     @Resource(name="accountTransferService")
@@ -86,6 +92,21 @@ public class AccountServiceImplTest {
 		System.out.println(processResult);		
 
 	}
-	
+	@Test
+	public void testSchedulerSettled()
+	{
+		for(int i=1;i<10;i++)
+		{
+			String day = accountTransferService.getPreAccountDay(i);
+			try {
+				long size = redisAccountService.getWillSettledSize(day);
+				System.out.println(day + ":" + size);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+	}
 	
 }
